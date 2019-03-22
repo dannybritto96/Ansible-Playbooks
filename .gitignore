@@ -1,2 +1,3 @@
 aws_keys.yml
 vault_secret.sh
+*.pem
