@@ -1,2 +1,15 @@
 ---
 # vars file for instance_creation
+
+region: us-east-1
+
+group_name: Mongo Server Security Group
+rules:
+  - proto: tcp
+    cidr_ip: 0.0.0.0/0
+    ports:
+      - 22
+      - 27017
+rules_egress:
+  - proto: all
+    cidr_ip: 0.0.0.0/0

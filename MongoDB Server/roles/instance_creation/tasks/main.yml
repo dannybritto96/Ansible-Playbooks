@@ -1,2 +1,8 @@
 ---
 # tasks file for instance_creation
+
+- name: Security Group
+  include_vars:
+    dir: vars
+- debug: var=group_name
+  

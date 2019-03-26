@@ -1,0 +1,9 @@
+---
+
+  - name: Provision an EC2 Instance
+    hosts: localhost
+    gather_facts: False
+    tags: Provisioning
+
+    roles:
+      - instance_creation
