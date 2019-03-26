@@ -1,6 +1,0 @@
-instance_type: t2.micro
-image: ami-0a313d6098716f372 # Ubuntu 18.04 x64
-keypair: restserv 
-count: 1
-instance_tags:
-  - Name: Mongo Server
