@@ -1,8 +1,46 @@
 ---
 # tasks file for instance_creation
 
-- name: Security Group
-  include_vars:
-    dir: vars
-- debug: var=group_name
-  
+# - name: create new key pair
+#   ec2_key:
+#     name: keypair1
+#     region: "{{ region }}"
+
+- name: create vpc 
+  ec2_vpc_net:
+    name: myvpc
+    state: present
+    cidr_block: 10.10.0.0/16
+    region: "{{ region }}"
+  register: vpc
+
+- debug: var=vpc
+
+- name: subnet
+  ec2_vpc_subnet:
+    state: present
+    vpc_id: "{{ vpc.vpc.id }}"
+    region: "{{ region }}"
+    cidr: 10.0.1.0/14
+  with_items: vpc
+  register: vpc_subnet
+
+- name: ec2 security group
+  ec2_group:
+    name: "{{ group_name }}"
+    description: security group for Mongo server
+    region: "{{ region }}"
+    vpc_id: "{{ vpc.id }}"
+    rules: "{{ rules }}"
+    rules_egress: "{{ rules_egress }}"
+
+- ec2:
+    key_name: keypair1
+    region: "{{ region }}"
+    instance_type: "{{ instance_type }}"
+    image: "{{ image }}"
+    wait: yes
+    group: "{{ group_name }}"
+    count: 1
+    vpc_subnet_id: "{{ vpc_subnet.id }}"
+    assign_public_ip: yes
