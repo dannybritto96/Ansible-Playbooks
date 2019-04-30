@@ -1,2 +1,8 @@
 ---
 # tasks file for configure_mongo
+
+- name: Shell 
+  shell: uname -a
+  register: uname
+
+- debug: var=uname

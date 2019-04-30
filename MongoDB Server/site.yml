@@ -1,9 +1,16 @@
 ---
 
-  - name: Provision an EC2 Instance
-    hosts: localhost
-    gather_facts: False
-    tags: Provisioning
+  # - name: Provision an EC2 Instance
+  #   hosts: localhost
+  #   gather_facts: False
+  #   tags: Provisioning
 
+  #   roles:
+  #     - instance_creation
+  
+  - name: Configure EC2
+    hosts: ec2-100-25-221-144.compute-1.amazonaws.com
+    vars:
+      ansible_ssh_private_key_file: keypair.pem
     roles:
-      - instance_creation
+      -  configure_mongo
