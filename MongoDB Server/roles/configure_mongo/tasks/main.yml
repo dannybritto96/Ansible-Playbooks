@@ -1,8 +1,56 @@
 ---
 # tasks file for configure_mongo
 
-- name: Shell 
-  shell: uname -a
-  register: uname
+- name: import public key
+  shell: apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 9DA31620334BD75D9DCB49F368818C72E52529D4
+  become: yes
 
-- debug: var=uname
+- name: create list file 
+  shell: echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.0.list
+  become: yes
+
+- name: update cache
+  apt:
+    update_cache: yes
+  become: yes
+
+- name: Install MongoDB and pymongo
+  apt:
+    name: "{{ packages }}"
+  vars:
+    packages:
+    - mongodb-org
+    - python3-pip
+  become: yes 
+
+- name: pip install pymongo
+  pip:
+    name: pymongo
+    executable: pip3
+
+- name: Start Mongo Service
+  service:
+    name: mongod
+    state: started
+  become: yes
+
+- mongodb_user:
+    database: admin
+    name: "{{ admin_username }}"
+    password: "{{ admin_pwd }}"
+    roles: userAdminAnyDatabase
+    state: present
+  
+- mongodb_user:
+    login_user: "{{ admin_username }}"
+    login_password: "{{ admin_pwd }}"
+    database: "{{ dbname }}"
+    name: "{{ username }}"
+    password: "{{ pwd }}"
+    roles:
+      - db: "{{ dbname }}"
+        role: userAdmin
+      - db: "{{ dbname }}"
+        role: readWrite
+      - db: "{{ dbname }}"
+        role: dbAdmin

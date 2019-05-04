@@ -9,7 +9,12 @@ rules:
     cidr_ip: 0.0.0.0/0
     ports:
       - 22
+    rule_desc: allow ssh
+  - proto: tcp
+    cidr_ip: 0.0.0.0/0
+    ports:
       - 27017
+    rule_desc: allow remote mongo connections
 rules_egress:
   - proto: all
     cidr_ip: 0.0.0.0/0

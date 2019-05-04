@@ -1,17 +1,17 @@
 ---
 # tasks file for instance_creation
 
-- name: create new key pair
-  ec2_key:
-    name: keypair1
-    region: "{{ region }}"
-  register: key
+# - name: create new key pair
+#   ec2_key:
+#     name: keypair1
+#     region: "{{ region }}"
+#   register: key
 
-- name: save pem file
-  copy:
-    content: "{{ key.key.private_key }}"
-    dest: keypair.pem
-    mode: 0400
+# - name: save pem file
+#   copy:
+#     content: "{{ key.key.private_key }}"
+#     dest: keypair.pem
+#     mode: 0400
 
 - name: create vpc 
   ec2_vpc_net:
@@ -23,18 +23,36 @@
 
 - name: create internet gateway
   ec2_vpc_igw:
+    tags:
+      Name: my_igw
     vpc_id: "{{ vpc.vpc.id }}"
     state: present
+    region: "{{ region }}"
   register: igw
 
 - name: subnet
   ec2_vpc_subnet:
+    tags:
+      Name: my_subnet
     state: present
     vpc_id: "{{ vpc.vpc.id }}"
     region: "{{ region }}"
-    cidr: 10.10.1.0/24
+    cidr: 10.10.0.0/24
   with_items: vpc
   register: vpc_subnet
+
+- name: route table
+  ec2_vpc_route_table:
+    tags:
+      Name: Public
+    vpc_id: "{{ vpc.vpc.id }}"
+    region: "{{ region }}"
+    subnets:
+      - "{{ vpc_subnet.results[0].subnet.id }}"
+    routes:
+      - dest: 0.0.0.0/0
+        gateway_id: "{{ igw.gateway_id }}"
+  register: route_table
 
 - name: ec2 security group
   ec2_group:
@@ -53,7 +71,7 @@
     wait: yes
     group: "{{ group_name }}"
     count: 1
-    vpc_subnet_id: "subnet-05f6347305d7c187b"
+    vpc_subnet_id: "{{ vpc_subnet.results[0].subnet.id }}"
     assign_public_ip: yes
   register: instance
 
