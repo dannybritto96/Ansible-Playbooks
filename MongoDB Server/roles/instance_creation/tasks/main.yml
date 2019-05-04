@@ -1,17 +1,17 @@
 ---
 # tasks file for instance_creation
 
-# - name: create new key pair
-#   ec2_key:
-#     name: keypair1
-#     region: "{{ region }}"
-#   register: key
+- name: create new key pair
+  ec2_key:
+    name: keypair1
+    region: "{{ region }}"
+  register: key
 
-# - name: save pem file
-#   copy:
-#     content: "{{ key.key.private_key }}"
-#     dest: keypair.pem
-#     mode: 0400
+- name: save pem file
+  copy:
+    content: "{{ key.key.private_key }}"
+    dest: keypair.pem
+    mode: 0400
 
 - name: create vpc 
   ec2_vpc_net:
