@@ -1,12 +1,12 @@
 ---
 
-  # - name: Provision an EC2 Instance
-  #   hosts: localhost
-  #   gather_facts: False
-  #   tags: Provisioning
+  - name: Provision an EC2 Instance
+    hosts: localhost
+    gather_facts: False
+    tags: Provisioning
 
-  #   roles:
-  #     - instance_creation
+    roles:
+      - instance_creation
   
   - name: Configure EC2
     hosts: just_created
