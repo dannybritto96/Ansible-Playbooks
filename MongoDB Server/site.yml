@@ -9,7 +9,7 @@
   #     - instance_creation
   
   - name: Configure EC2
-    hosts: all
+    hosts: just_created
     vars:
       ansible_ssh_private_key_file: "{{ playbook_dir }}/keypair.pem"
       ansible_ssh_user: ubuntu
