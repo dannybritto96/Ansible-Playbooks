@@ -6,3 +6,4 @@ username: danny
 pwd: password1234
 admin_username: admin
 admin_pwd: password1234
+config_file: /etc/mongod.conf

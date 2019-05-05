@@ -54,3 +54,39 @@
         role: readWrite
       - db: "{{ dbname }}"
         role: dbAdmin
+
+- name: Edit mongo.conf
+  lineinfile:
+    path: /home/danny/Desktop/samp
+    regexp: '#security:'
+    line: "security:\n\tauthorization: 'enabled'"
+    state: present
+      
+  lineinfile:
+    path: /home/danny/Desktop/samp
+    regexp: '^\s+bindIp:\s127\.0\.0\.1'
+    line: "\tbindIp: 0.0.0.0"
+    state: present
+
+- name: restart mongod service
+  service:
+    name: mongod
+    state: restarted
+  become: yes
+
+- name: Modify iptables
+  iptables:
+    chain: INPUT
+    jump: ACCEPT
+    protocol: tcp
+    destination_port: 27017
+    ctstate: NEW,ESTABLSIHED
+    comment: allow 27017 input
+   
+  iptables:
+    chain: OUTPUT
+    jump: ACCEPT
+    protocol: tcp
+    to_ports: 27017
+    ctstate: ESTABLISHED
+    comment: allow 27017 output
