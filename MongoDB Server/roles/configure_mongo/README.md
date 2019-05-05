@@ -6,11 +6,13 @@ Installing MongoDB and setting it up for remote connection
 Role Variables
 --------------
 
-admin_username - Username of admin of DB Instance
-admin_pwd - Admin Password
-dbname - Name of collection to be created
-username - User for the created collection
-pwd - Password for user of the created collection
+| variable | Description |
+| --- | --- |
+| admin_username | Username of admin of DB Instance |
+| admin_pwd | Admin Password |
+| dbname | Name of collection to be created |
+| username | User for the created collection |
+| pwd | Password for user of the created collection |
 
 Example Playbook
 ----------------
