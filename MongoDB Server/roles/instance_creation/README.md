@@ -11,6 +11,8 @@ boto
 Role Variables
 --------------
 
+| variable | Description |
+| --- | --- |
 | region | Region in which the resources must be created |
 | group_name | Name of security group |
 | rules | Rules for the security group |
