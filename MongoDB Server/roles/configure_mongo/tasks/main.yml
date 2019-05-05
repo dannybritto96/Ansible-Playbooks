@@ -57,13 +57,13 @@
 
 - name: Edit mongo.conf
   lineinfile:
-    path: /home/danny/Desktop/samp
+    path: "{{ config_file }}"
     regexp: '#security:'
     line: "security:\n\tauthorization: 'enabled'"
     state: present
       
   lineinfile:
-    path: /home/danny/Desktop/samp
+    path: "{{ config_file }}"
     regexp: '^\s+bindIp:\s127\.0\.0\.1'
     line: "\tbindIp: 0.0.0.0"
     state: present

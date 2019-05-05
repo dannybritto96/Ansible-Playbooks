@@ -13,6 +13,7 @@ Role Variables
 | dbname | Name of collection to be created |
 | username | User for the created collection |
 | pwd | Password for user of the created collection |
+| config_file | Path to mongod.conf |
 
 Example Playbook
 ----------------
