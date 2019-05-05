@@ -1,3 +1,1 @@
 # Ansible Playbooks
-
-## Ignore Contents
