@@ -1,0 +1,37 @@
+---
+# tasks file for configure_mongo
+
+- name: update cache
+  apt:
+    update_cache: yes
+  become: yes
+
+- name: Install Apache
+  apt:
+    name: "{{ packages }}"
+  vars:
+    packages:
+    - apache2
+  become: yes 
+
+- name: Start Apache Service
+  service:
+    name: apache2
+    state: started
+  become: yes
+
+- name: Get Meta Data
+  shell: curl http://169.254.169.254/latest/meta-data/public-ipv4
+  register: public_ip
+
+- name: index.html
+  copy:
+    dest: /var/www/html/index.html
+    content: "{{ public_ip }}"
+  become: yes
+
+- name: health.html
+  file:
+    path: /var/www/html/health.html
+    state: touch
+  become: yes
