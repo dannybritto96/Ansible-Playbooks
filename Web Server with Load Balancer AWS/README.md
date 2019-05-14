@@ -1,1 +1,0 @@
-### Ansible Playbook to create an EC2 Instance with VPC, Subnet, Internet Gateway, Route Table and configuring the EC2 Instance into a MongoDB instance with remote access
