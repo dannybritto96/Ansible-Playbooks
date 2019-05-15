@@ -1,0 +1,4 @@
+localhost_ansible_connection=local
+
+[windows]
+3.82.252.139

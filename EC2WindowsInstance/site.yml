@@ -1,8 +1,18 @@
 ---
 
-  - name: Provision EC2 Instance
-    hosts: localhost
-    gather_facts: False
+  # - name: Provision EC2 Instance
+  #   hosts: localhost
+  #   gather_facts: False
+  #   roles:
+  #     - win_instance
 
+  - name: Install IIS
+    hosts: all
+    vars:
+      ansible_user: Administrator
+      ansible_port: 5986
+      ansible_connection: winrm
+      ansible_winrm_server_cert_validation: ignore
+    
     roles:
-      - win_instance
+      - install_iis
