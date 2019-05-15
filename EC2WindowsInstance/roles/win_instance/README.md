@@ -3,6 +3,13 @@ Role Name
 
 A brief description of the role goes here.
 
+```ansible
+- name: Sample
+  ec2:
+   region: us-east-1
+
+```
+
 Requirements
 ------------
 
