@@ -115,8 +115,8 @@
         to_port: 22
         cidr_ip: 0.0.0.0/0
       - proto: tcp
-        from_port: 3306
-        to_port: 3306
+        from_port: 80
+        to_port: 80
         cidr_ip: 0.0.0.0/0
     rules_egress:
       - proto: all
@@ -166,13 +166,36 @@
     vpc_subnet_id: "{{ private_subnet.subnet.id }}"
     instance_tags:
       Name: mysql Instance
+    user_data: |
+      #!/bin/sh
+      sudo apt update -y
+      sudo apt install -y expect mysql-server-5.7
+      NEW_MYSQL_PASSWORD="root"
+      DB_PASSWORD="root"
+      SECURE_MYSQL=$(expect -c "
+        set timeout 3
+        spawn mysql_secure_installation
+        expect \"Press y|Y for Yes, any other for No:\"
+        send \"n\r\"
+        expect \"New password:\"
+        send \"$NEW_MYSQL_PASSWORD\r\"
+        expect \"Re-enter new password:\"
+        send \"$NEW_MYSQL_PASSWORD\r\"
+        expect \"Remove anonymous users?\"
+        send \"y\r\"
+        expect \"Disallow root login remotely?\"
+        send \"y\r\"
+        expect \"Remove test database and access to it?\"
+        send \"y\r\"
+        expect \"Reload privilege tables now?\"
+        send \"y\r\"
+        expect eof")
+      sudo sed -i 's/bind-address\t\t=127\.0\.0\.1/bind-address\t\t=0\.0\.0\.0/g'
+      
+      
   register: private_instance
 
 
 - add_host:
     name: "{{ public_instance.instances[0].public_dns_name }}"
-    groups: "public_instances"
-
-- add_host:
-    name: "{{ private_instance.instances[0].private_ip }}"
-    groups: "private_instances"
+    groups: "instances"
