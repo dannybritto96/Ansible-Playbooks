@@ -1,0 +1,9 @@
+- name: Create Instances
+  hosts: localhost
+  roles:
+    - create-instances
+
+- name: Configure Instances
+  hosts: public_instances
+  roles:
+    - install-ownCloud

@@ -1,0 +1,178 @@
+---
+# tasks file for create-instances
+
+- name: Create key pair
+  ec2_key:
+    name: "{{ key_name }}"
+    region: "{{ region }}"
+  register: key
+
+- name: Save PEM file
+  copy:
+    content: "{{ key.key.private_key }}"
+    dest: lab2.pem
+    mode: 0400
+
+- name: Create VPC
+  ec2_vpc_net:
+    name: ownCloud VPC
+    state: present
+    cidr_block: "{{ vpc_cidr }}"
+    region: "{{ region }}"
+  register: vpc
+
+# - debug: var=vpc
+
+- name: Create Internet Gateway
+  ec2_vpc_igw:
+    tags:
+      Name: my_igw
+    vpc_id: "{{ vpc.vpc.id }}"
+    state: present
+    region: "{{ region }}"
+  register: igw
+
+- name: Public Subnet
+  ec2_vpc_subnet:
+    tags:
+      Name: Public Subnet
+    state: present
+    map_public: yes
+    vpc_id: "{{ vpc.vpc.id }}"
+    region: "{{ region }}"
+    cidr: "{{ public_cidr }}"
+  register: public_subnet
+
+# - debug: var=public_subnet
+
+- name: Create Public Route Table
+  ec2_vpc_route_table:
+    tags:
+      Name: Public Table
+    vpc_id: "{{ vpc.vpc.id }}"
+    region: "{{ region }}"
+    subnets:
+      - "{{public_subnet.subnet.id }}"
+    routes:
+      - dest: 0.0.0.0/0
+        gateway_id: "{{ igw.gateway_id }}"
+
+- name: Private Subnet
+  ec2_vpc_subnet:
+    tags:
+      Name: Private Subnet
+    state: present
+    vpc_id: "{{ vpc.vpc.id }}"
+    region: "{{ region }}"
+    cidr: "{{ private_cidr }}"
+  register: private_subnet
+
+- name: Create EIP
+  ec2_eip:
+    state: present
+    region: "{{ region }}"
+    release_on_disassociation: yes
+  register: eip
+
+- name: Create NAT Gateway
+  ec2_vpc_nat_gateway:
+    state: present
+    subnet_id: "{{ public_subnet.subnet.id }}"
+    eip_address: "{{ eip.public_ip }}"
+    wait: yes
+    wait_timeout: 800
+    region: "{{ region }}"
+  register: nat_gw
+
+# - debug: var=nat_gw
+
+- name: Lookup Route Tables
+  ec2_vpc_route_table_facts:
+    region: "{{ region }}"
+    filters:
+      vpc-id: "{{ vpc.vpc.id }}"
+  register: route_table
+
+- name: Setup Private Route Table
+  ec2_vpc_route_table:
+    region: "{{ region }}"
+    vpc_id: "{{ vpc.vpc.id }}"
+    lookup: id
+    route_table_id: "{{ route_table.route_tables[0].id }}"
+    subnets: "{{ private_subnet.subnet.id }}"
+    routes:
+      - dest: 0.0.0.0/0
+        nat_gateway_id: "{{ nat_gw.nat_gateway_id }}"
+
+- name: Create Public Security Group
+  ec2_group:
+    name: "{{ public_sg }}"
+    vpc_id: "{{ vpc.vpc.id }}"
+    region: "{{ region }}"
+    rules:
+      - proto: tcp
+        from_port: 22
+        to_port: 22
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 3306
+        to_port: 3306
+        cidr_ip: 0.0.0.0/0
+    rules_egress:
+      - proto: all
+        cidr_ip: 0.0.0.0/0
+
+- name: Create Private Security Group
+  ec2_group:
+    name: "{{ private_sg }}"
+    vpc_id: "{{ vpc.vpc.id }}"
+    region: "{{ region }}"
+    rules:
+      - proto: tcp
+        from_port: 22
+        to_port: 22
+        cidr_ip: "{{ private_cidr }}"
+      - proto: tcp
+        from_port: 3306
+        to_port: 3306
+        cidr_ip: "{{ private_cidr }}"
+    rules_egress:
+      - proto: all
+        cidr_ip: 0.0.0.0/0
+
+- name: Create Instance in Public Subnet
+  ec2:
+    key_name: "{{ key_name }}"
+    instance_type: "{{ instance_type }}"
+    image: "{{ image }}"
+    wait: yes
+    count: 1
+    group: "{{ public_sg }}"
+    wait_timeout: 500
+    vpc_subnet_id: "{{ public_subnet.subnet.id }}"
+    instance_tags:
+      Name: ownCloud Instance
+  register: public_instance
+
+- name: Create Instance in Private Subnet
+  ec2:
+    key_name: "{{ key_name }}"
+    instance_type: "{{ instance_type }}"
+    image: "{{ image }}"
+    wait: yes
+    count: 1
+    group: "{{ private_sg }}"
+    wait_timeout: 500
+    vpc_subnet_id: "{{ private_subnet.subnet.id }}"
+    instance_tags:
+      Name: mysql Instance
+  register: private_instance
+
+
+- add_host:
+    name: "{{ public_instance.instances[0].public_dns_name }}"
+    groups: "public_instances"
+
+- add_host:
+    name: "{{ private_instance.instances[0].private_ip }}"
+    groups: "private_instances"
