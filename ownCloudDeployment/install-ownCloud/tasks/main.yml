@@ -1,120 +1,125 @@
 ---
 # tasks file for install-ownCloud
 
-# - name: Update repositories
-#   apt:
-#     update_cache: yes
-#   become: yes
+- name: Update repositories
+  apt:
+    update_cache: yes
+  become: yes
 
-# - name: Install LAMP
-#   apt:
-#     name: "{{ packages }}"
-#   vars:
-#     packages:
-#       - apache2
-#       - php
-#       - libapache2-mod-php
-#       - php-mysql
-#       - curl
-#   become: yes
+- name: Install LAMP
+  apt:
+    name: "{{ packages }}"
+  vars:
+    packages:
+      - apache2
+      - php
+      - libapache2-mod-php
+      - php-mysql
+      - curl
+  become: yes
 
-# - name: Edit Apache Config file
-#   shell: sed -i 's/DirectoryIndex index\.html index\.cgi index\.pl index\.php index\.xhtml index\.htm/DirectoryIndex index\.php index\.html index\.cgi index\.pl index\.xhtml index\.htm/g' /etc/apache2/mods-enabled/dir.conf
-#   become: yes
+- name: Edit Apache Config file
+  shell: sed -i 's/DirectoryIndex index\.html index\.cgi index\.pl index\.php index\.xhtml index\.htm/DirectoryIndex index\.php index\.html index\.cgi index\.pl index\.xhtml index\.htm/g' /etc/apache2/mods-enabled/dir.conf
+  become: yes
 
-# - name: Add ownCloud APT keys
-#   shell: curl https://download.owncloud.org/download/repositories/10.0/Ubuntu_18.04/Release.key | sudo apt-key add -
-#   become: yes
+- name: Add ownCloud APT keys
+  shell: curl https://download.owncloud.org/download/repositories/10.0/Ubuntu_18.04/Release.key | sudo apt-key add -
+  become: yes
 
-# - name: Add owncloud to sources.list
-#   shell: echo 'deb http://download.owncloud.org/download/repositories/10.0/Ubuntu_18.04/ /' | sudo tee /etc/apt/sources.list.d/owncloud.list
-#   become: yes
+- name: Add owncloud to sources.list
+  shell: echo 'deb http://download.owncloud.org/download/repositories/10.0/Ubuntu_18.04/ /' | sudo tee /etc/apt/sources.list.d/owncloud.list
+  become: yes
 
-# - name: Update cache
-#   apt:
-#     update_cache: yes
-#   become: yes
-#   become_method: sudo
+- name: Update cache
+  apt:
+    update_cache: yes
+  become: yes
+  become_method: sudo
 
-# - name: Install owncloud and php mods
-#   apt:
-#     name: "{{ packages }}"
-#   vars:
-#     packages:
-#       - php-bz2
-#       - php-curl
-#       - php-gd
-#       - php-imagick
-#       - php-intl
-#       - php-mbstring
-#       - php-xml
-#       - php-zip
-#       - owncloud-files
-#   become: yes
+- name: Install owncloud and php mods
+  apt:
+    name: "{{ packages }}"
+  vars:
+    packages:
+      - php-bz2
+      - php-curl
+      - php-gd
+      - php-imagick
+      - php-intl
+      - php-mbstring
+      - php-xml
+      - php-zip
+      - owncloud-files
+  become: yes
 
-# - name: Enable pdo_mysql
-#   shell: phpenmod pdo_mysql
-#   become: yes
+- name: Enable pdo_mysql
+  shell: phpenmod pdo_mysql
+  become: yes
 
-# - name: Generate Certificate for OpenSSL
-#   shell: |
-#     #!/bin/bash
-#     apt update -y
-#     apt install -y apache2
-#     IP="curl icanhazip.com"
-#     INSTALL_CERT=$(expect -c "
-#     set timeout 3
-#     spawn openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/apache-selfsigned.key -out /etc/ssl/certs/apache-selfsigned.crt
+- name: Generate Certificate for OpenSSL
+  shell: |
+    #!/bin/bash
+    apt update -y
+    apt install -y apache2
+    IP="curl icanhazip.com"
+    INSTALL_CERT=$(expect -c "
+    set timeout 3
+    spawn openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/apache-selfsigned.key -out /etc/ssl/certs/apache-selfsigned.crt
 
-#     expect \"Country Name (2 letter code) [AU]:\"
-#     send \"IN\r\"
+    expect \"Country Name (2 letter code) [AU]:\"
+    send \"IN\r\"
 
-#     expect \"State or Province Name (full name) [Some-State]:\"
-#     send \"Tamil Nadu\r\"
+    expect \"State or Province Name (full name) [Some-State]:\"
+    send \"Tamil Nadu\r\"
 
-#     expect \"Locality Name (eg, city) []:\"
-#     send \"Chennai\r\"
-            
-#     expect \"Organization Name (eg, company) [Internet Widgits Pty Ltd]:\"        
-#     send \"\r\"
-            
-#     expect \"Organizational Unit Name (eg, section) []:\"        
-#     send \"\r\"
-            
-#     expect \"Common Name (e.g. server FQDN or YOUR name) []:\"        
-#     send \"$IP\r\"
+    expect \"Locality Name (eg, city) []:\"
+    send \"Chennai\r\"
 
-#     expect \"Email Address []:\"        
-#     send \"danieb1996@live.com\r\"
+    expect \"Organization Name (eg, company) [Internet Widgits Pty Ltd]:\"
+    send \"\r\"
 
-#     expect eof")
+    expect \"Organizational Unit Name (eg, section) []:\"
+    send \"\r\"
 
-#     echo "${INSTALL_CERT}"
+    expect \"Common Name (e.g. server FQDN or YOUR name) []:\"
+    send \"$IP\r\"
 
-# - name: Configure Apache
-#   copy:
-#     content: |
-#       SSLCipherSuite EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH
-#       SSLProtocol All -SSLv2 -SSLv3 -TLSv1 -TLSv1.1
-#       SSLHonorCipherOrder On
-#       # Disable preloading HSTS for now.  You can use the commented out header line that includes
-#       # the "preload" directive if you understand the implications.
-#       # Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
-#       Header always set X-Frame-Options DENY
-#       Header always set X-Content-Type-Options nosniff
-#       # Requires Apache >= 2.4
-#       SSLCompression off
-#       SSLUseStapling on
-#       SSLStaplingCache "shmcb:logs/stapling-cache(150000)"
-#       # Requires Apache >= 2.4.11
-#       SSLSessionTickets Off
-#     dest: /etc/apache2/conf-available/ssl-params.conf
-#     force: no
-#   become: yes
-  
+    expect \"Email Address []:\"
+    send \"danieb1996@live.com\r\"
+
+    expect eof")
+
+    echo "${INSTALL_CERT}"
+
+- name: Configure Apache
+  copy:
+    content: |
+      SSLCipherSuite EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH
+      SSLProtocol All -SSLv2 -SSLv3 -TLSv1 -TLSv1.1
+      SSLHonorCipherOrder On
+      # Disable preloading HSTS for now.  You can use the commented out header line that includes
+      # the "preload" directive if you understand the implications.
+      # Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+      Header always set X-Frame-Options DENY
+      Header always set X-Content-Type-Options nosniff
+      # Requires Apache >= 2.4
+      SSLCompression off
+      SSLUseStapling on
+      SSLStaplingCache "shmcb:logs/stapling-cache(150000)"
+      # Requires Apache >= 2.4.11
+      SSLSessionTickets Off
+    dest: /etc/apache2/conf-available/ssl-params.conf
+    force: no
+  become: yes
+
 - name: Configure Apache Step 2
-  shell: sed -i 's/ServerAdmin webmaster@localhost/ServerAdmin danieb1996@live\.com/g' /etc/apache2/sites-available/default-ssl.conf
-  shell: sed -i 's,DocumentRoot /var/www/html,DocumentRoot /var/www/owncloud,g' /etc/apache2/sites-available/default-ssl.conf
+  replace:
+    path: /etc/apache2/sites-available/default-ssl.conf
+    regexp: 'DocumentRoot\s\/var\/www\/html'
+    replace: 'DocumentRoot /var/www/owncloud'
+  become: yes
+
+- shell: sed -i 's\ServerAdmin webmaster@localhost\ServerAdmin danieb1996@live.com\g' /etc/apache2/sites-available/default-ssl.conf
   become: yes
 
 - name: Configure Apache Step 3
@@ -122,22 +127,39 @@
     path: /etc/apache2/sites-available/default-ssl.conf
     line: 'ServerName {{ ansible_default_ipv4.address }}'
     insertafter: 'ServerAdmin danieb1996@live.com'
+    state: present
 
   lineinfile:
     path: /etc/apache2/sites-available/000-default.conf
+    insertafter: <VirtualHost *:80>
     line: 'Redirect "/" "https://{{ ansible_default_ipv4.address }}/"'
-    insertafter: '<VirtualHost *:80>'
+
   become: yes
 
 - name: Further settings
-  shell: ufw allow 'Apache Full'
-  shell: ufw delete allow 'Apache'
-  shell: a2enmod ssl
-  shell: a2enmod headers
-  shell: a2ensite default-ssl
-  shell: a2enconf ssl-params
-  
+  shell: ufw allow 'Apache Full' && ufw delete allow 'Apache'
   become: yes
+
+- name: Enabling Apache2 Modules
+  apache2_module:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - ssl
+    - headers
+  become: yes
+
+- name: Enabling SSL VirtualHost
+  shell: a2ensite default-ssl
+  become: yes
+
+- name: Enabling SSL params
+  shell: a2enconf ssl-params
+  become: yes
+
+# - name: Setting up permanent redirection
+#
+# - name: Adjusting Document Root
 
 - name: ownCloud Config
   copy:
@@ -152,7 +174,7 @@
 
     dest: /var/www/owncloud/config/config.php
     force: no
-  
+
   become: yes
 
 - name: Restart Apache2
@@ -160,5 +182,3 @@
     name: apache2
     state: restarted
   become: yes
-
-

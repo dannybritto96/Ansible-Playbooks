@@ -1,6 +1,6 @@
 ansible_python_interpreter: /usr/bin/python3
 ansible_ssh_pass: root
 ansible_sudo_pass: root
-ansible_user: vm1
+ansible_user: danny2
 db_password: root
 mysql_host: 10.0.2.15
