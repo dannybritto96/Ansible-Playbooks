@@ -168,8 +168,8 @@
       Name: mysql Instance
     user_data: |
       #!/bin/sh
-      sudo apt update -y
-      sudo apt install -y expect mysql-server-5.7
+      apt update -y
+      apt install -y expect mysql-server-5.7
       NEW_MYSQL_PASSWORD="root"
       DB_PASSWORD="root"
       SECURE_MYSQL=$(expect -c "
@@ -190,7 +190,16 @@
         expect \"Reload privilege tables now?\"
         send \"y\r\"
         expect eof")
-      sudo sed -i 's/bind-address\t\t=127\.0\.0\.1/bind-address\t\t=0\.0\.0\.0/g'
+      echo "${SECURE_MYSQL}"
+      sed -i 's/bind-address\t\t=127\.0\.0\.1/#bind-address\t\t=127\.0\.0\.1/g' /etc/mysql/mysql.conf.d/mysqld.cnf
+      systemctl restart mysql
+      ufw allow mysql
+      /sbin/iptables -A INPUT -p TCP --destination-port 3306 -m state --state NEW,ESTABLISHED -j ACCEPT
+      /sbin/iptables -A OUTPUT -p TCP --source-port 3306 -m state --state ESTABLISHED -j ACCEPT
+      service ufw restart
+      mysql --user=root --password="${NEW_SQL_PASSWORD}" -e "CREATE DATABASE owncloud;"
+      mysql --user=root --password="${NEW_SQL_PASSWORD}" -e "GRANT ALL ON owncloud.*" TO 'owncloud'@'%' IDENTIFIED BY '${DB_PASSWORD}'"
+      mysql --user=root --password="${NEW_SQL_PASSWORD}" -e "FLUSH PRIVILEGES;"
       
       
   register: private_instance
@@ -198,4 +207,4 @@
 
 - add_host:
     name: "{{ public_instance.instances[0].public_dns_name }}"
-    groups: "instances"
+    groups: "ownCloud_instance"

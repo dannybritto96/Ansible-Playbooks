@@ -1,3 +1,6 @@
-ansible_ssh_private_key_file: "{{ playbook_dir }}/lab2.pem"
-ansible_ssh_user: ubuntu
 ansible_python_interpreter: /usr/bin/python3
+ansible_ssh_pass: root
+ansible_sudo_pass: root
+ansible_user: vm1
+db_password: root
+mysql_host: 10.0.2.15
