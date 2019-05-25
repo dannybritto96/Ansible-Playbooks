@@ -13,9 +13,6 @@
     dest: "{{ key_name }}.pem"
     mode: 0400
 
-- set_fact:
-    key_name: "{{ key_name }}"
-
 - name: Create VPC
   ec2_vpc_net:
     name: ownCloud VPC
@@ -43,19 +40,6 @@
     region: "{{ region }}"
     cidr: "{{ public_cidr }}"
   register: public_subnet
-
-
-- name: Create Public Route Table
-  ec2_vpc_route_table:
-    tags:
-      Name: Public Table
-    vpc_id: "{{ vpc.vpc.id }}"
-    region: "{{ region }}"
-    subnets:
-      - "{{public_subnet.subnet.id }}"
-    routes:
-      - dest: 0.0.0.0/0
-        gateway_id: "{{ igw.gateway_id }}"
 
 - name: Private Subnet
   ec2_vpc_subnet:
@@ -102,20 +86,40 @@
       - dest: 0.0.0.0/0
         nat_gateway_id: "{{ nat_gw.nat_gateway_id }}"
 
+- name: Create Public Route Table
+  ec2_vpc_route_table:
+    tags:
+      Name: Public Table
+    vpc_id: "{{ vpc.vpc.id }}"
+    region: "{{ region }}"
+    subnets:
+      - "{{public_subnet.subnet.id }}"
+    routes:
+      - dest: 0.0.0.0/0
+        gateway_id: "{{ igw.gateway_id }}"
+
 - name: Create Public Security Group
   ec2_group:
     name: "{{ public_sg }}"
     vpc_id: "{{ vpc.vpc.id }}"
+    description: public security group for SSH and http and https
     region: "{{ region }}"
     rules:
       - proto: tcp
         from_port: 22
         to_port: 22
         cidr_ip: 0.0.0.0/0
+        rule_desc: allow ssh
       - proto: tcp
         from_port: 80
         to_port: 80
         cidr_ip: 0.0.0.0/0
+        rule_desc: allow 80
+      - proto: tcp
+        from_port: 443
+        to_port: 443
+        cidr_ip: 0.0.0.0/0
+        rule_desc: https
     rules_egress:
       - proto: all
         cidr_ip: 0.0.0.0/0
@@ -123,6 +127,7 @@
 - name: Create Private Security Group
   ec2_group:
     name: "{{ private_sg }}"
+    description: "Private Security group for SSH and MySQL"
     vpc_id: "{{ vpc.vpc.id }}"
     region: "{{ region }}"
     rules:
@@ -130,10 +135,12 @@
         from_port: 22
         to_port: 22
         cidr_ip: "{{ private_cidr }}"
+        rule_desc: allow ssh
       - proto: tcp
         from_port: 3306
         to_port: 3306
         cidr_ip: "{{ private_cidr }}"
+        rule_desc: allow mysql conn
     rules_egress:
       - proto: all
         cidr_ip: 0.0.0.0/0
@@ -142,6 +149,7 @@
   ec2:
     key_name: "{{ key_name }}"
     instance_type: "{{ instance_type }}"
+    region: "{{ region }}"
     image: "{{ image }}"
     wait: yes
     count: 1
@@ -155,6 +163,7 @@
 - name: Create Instance in Private Subnet
   ec2:
     key_name: "{{ key_name }}"
+    region: "{{ region }}"
     instance_type: "{{ instance_type }}"
     image: "{{ image }}"
     wait: yes
@@ -204,7 +213,10 @@
 
 - set_fact:
     mysql_host: "{{ private_instance.instances[0].private_ip }}"
+    cacheable: yes
+    
+- debug: var=mysql_host
 
 - add_host:
     name: "{{ public_instance.instances[0].public_dns_name }}"
-    groups: "ownCloud_instance"
+    groups: ownCloud_instance

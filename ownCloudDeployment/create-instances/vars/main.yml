@@ -8,7 +8,6 @@ public_cidr: 10.0.2.0/24
 
 instance_type: t2.micro
 image: ami-0a313d6098716f372 # Ubuntu 18.04 x64
-key_name: ownCloud_key
 
 private_sg: Private SG
 public_sg: Public SG

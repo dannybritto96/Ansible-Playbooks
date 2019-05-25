@@ -1,6 +1,12 @@
 ---
 # tasks file for install-ownCloud
 
+- debug: var=inventory_hostname
+- debug: msg="{{ hostvars['localhost']['mysql_host']}}"
+
+- set_fact:
+    mysql_host: "{{ hostvars['localhost']['mysql_host']}}"
+
 - name: Update repositories
   apt:
     update_cache: yes
@@ -71,7 +77,7 @@
   openssl_csr:
     path: /etc/ssl/apache-selfsigned.csr
     privatekey_path: /etc/ssl/private/apache-selfsigned.key
-    common_name: "{{ ansible_default_ipv4.address }}"
+    common_name: "{{ inventory_hostname }}"
   become: yes
 
 - name: Generate Certificate for OpenSSL
@@ -110,40 +116,41 @@
     replace: 'DocumentRoot /var/www/owncloud'
   become: yes
 
-- shell: sed -i 's\ServerAdmin webmaster@localhost\ServerAdmin danieb1996@live.com\g' /etc/apache2/sites-available/default-ssl.conf
-  become: yes
-
 - name: Configure Apache Step 3
-  lineinfile:
-    path: /etc/apache2/sites-available/default-ssl.conf
-    insertafter: 'ServerAdmin danieb1996@live.com'
-    line: '   ServerName {{ ansible_default_ipv4.address }}'
-    state: present
+  shell: sed -i 's\ServerAdmin webmaster@localhost\ServerAdmin danieb1996@live.com\g' /etc/apache2/sites-available/default-ssl.conf
   become: yes
 
 - name: Configure Apache Step 4
   lineinfile:
-    path: /etc/apache2/sites-available/000-default.conf
-    insertafter: 'ServerAdmin webmaster@localhost'
-    line: 'Redirect permanent "/" "https://{{ ansible_default_ipv4.address }}/"'
+    path: /etc/apache2/sites-available/default-ssl.conf
+    insertafter: 'ServerAdmin danieb1996@live.com'
+    line: '   ServerName {{ inventory_hostname }}'
     state: present
   become: yes
 
 - name: Configure Apache Step 5
+  lineinfile:
+    path: /etc/apache2/sites-available/000-default.conf
+    insertafter: 'ServerAdmin webmaster@localhost'
+    line: 'Redirect permanent "/" "https://{{ inventory_hostname }}/"'
+    state: present
+  become: yes
+
+- name: Configure Apache Step 6
   replace:
     path: /etc/apache2/sites-available/default-ssl.conf
     regexp: 'SSLCertificateFile\t\/etc\/ssl\/certs\/ssl\-cert\-snakeoil\.pem'
     replace: 'SSLCertificateFile      /etc/ssl/certs/apache-selfsigned.crt'
   become: yes
 
-- name: Configure Apache Step 6
+- name: Configure Apache Step 7
   replace:
     path: /etc/apache2/sites-available/default-ssl.conf
     regexp: 'SSLCertificateKeyFile\s+(.*)$'
     replace: 'SSLCertificateKeyFile      /etc/ssl/private/apache-selfsigned.key'
   become: yes
 
-- name: Configure Apache Step 7
+- name: Configure Apache Step 8
   lineinfile:
     path: /etc/apache2/sites-available/default-ssl.conf
     insertbefore: '</VirtualHost>'
@@ -154,7 +161,7 @@
     state: present
   become: yes
 
-- name: Further settings
+- name: ufw settings
   shell: ufw allow 'Apache Full' && ufw delete allow 'Apache'
   become: yes
 
@@ -199,7 +206,7 @@
     force: no
   become: yes
 
-- name: Change config permissions
+- name: Change config file permissions
   file:
     path: /var/www/owncloud/config/config.php
     owner: www-data

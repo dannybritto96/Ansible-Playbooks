@@ -5,5 +5,7 @@
 
 - name: Install ownCloud
   hosts: ownCloud_instance
+  vars:
+    ansible_ssh_private_key_file: "{{ playbook_dir }}/{{ key_name }}.pem"
   roles:
     - install-ownCloud
