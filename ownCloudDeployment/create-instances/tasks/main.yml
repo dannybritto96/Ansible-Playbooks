@@ -134,12 +134,12 @@
       - proto: tcp
         from_port: 22
         to_port: 22
-        cidr_ip: "{{ private_cidr }}"
+        cidr_ip: "{{ public_cidr }}"
         rule_desc: allow ssh
       - proto: tcp
         from_port: 3306
         to_port: 3306
-        cidr_ip: "{{ private_cidr }}"
+        cidr_ip: "{{ public_cidr }}"
         rule_desc: allow mysql conn
     rules_egress:
       - proto: all
@@ -198,14 +198,14 @@
         send \"y\r\"
         expect eof")
       echo "${SECURE_MYSQL}"
-      sed -i 's/bind-address\t\t=127\.0\.0\.1/#bind-address\t\t=127\.0\.0\.1/g' /etc/mysql/mysql.conf.d/mysqld.cnf
+      sed -i "s/bind-address.*/bind-address = 0.0.0.0/g" /etc/mysql/mysql.conf.d/mysqld.cnf
       systemctl restart mysql
       ufw allow mysql
       /sbin/iptables -A INPUT -p TCP --destination-port 3306 -m state --state NEW,ESTABLISHED -j ACCEPT
       /sbin/iptables -A OUTPUT -p TCP --source-port 3306 -m state --state ESTABLISHED -j ACCEPT
       service ufw restart
       mysql --user=root --password="${NEW_SQL_PASSWORD}" -e "CREATE DATABASE owncloud;"
-      mysql --user=root --password="${NEW_SQL_PASSWORD}" -e "GRANT ALL ON owncloud.* TO 'owncloud'@'%' IDENTIFIED BY '${DB_PASSWORD}'"
+      mysql --user=root --password="${NEW_SQL_PASSWORD}" -e "GRANT ALL ON owncloud.* TO 'owncloud'@'{{ public_instance.instances[0].private_ip }}' IDENTIFIED BY '${DB_PASSWORD}'"
       mysql --user=root --password="${NEW_SQL_PASSWORD}" -e "FLUSH PRIVILEGES;"
       
       
@@ -214,7 +214,7 @@
 - set_fact:
     mysql_host: "{{ private_instance.instances[0].private_ip }}"
     cacheable: yes
-    
+
 - debug: var=mysql_host
 
 - add_host:

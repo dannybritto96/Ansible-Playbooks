@@ -219,3 +219,9 @@
     name: apache2
     state: restarted
   become: yes
+
+- name: Copying private key
+  copy:
+    src: "{{ playbook_dir }}/{{ key_file}}.pem"
+    dest: /home/ubuntu
+    mode: 0400
