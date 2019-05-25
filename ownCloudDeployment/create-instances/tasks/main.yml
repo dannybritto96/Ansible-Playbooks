@@ -10,8 +10,11 @@
 - name: Save PEM file
   copy:
     content: "{{ key.key.private_key }}"
-    dest: lab2.pem
+    dest: "{{ key_name }}.pem"
     mode: 0400
+
+- set_fact:
+    key_name: "{{ key_name }}"
 
 - name: Create VPC
   ec2_vpc_net:
@@ -20,8 +23,6 @@
     cidr_block: "{{ vpc_cidr }}"
     region: "{{ region }}"
   register: vpc
-
-# - debug: var=vpc
 
 - name: Create Internet Gateway
   ec2_vpc_igw:
@@ -43,7 +44,6 @@
     cidr: "{{ public_cidr }}"
   register: public_subnet
 
-# - debug: var=public_subnet
 
 - name: Create Public Route Table
   ec2_vpc_route_table:
@@ -83,8 +83,6 @@
     wait_timeout: 800
     region: "{{ region }}"
   register: nat_gw
-
-# - debug: var=nat_gw
 
 - name: Lookup Route Tables
   ec2_vpc_route_table_facts:
@@ -170,8 +168,8 @@
       #!/bin/sh
       apt update -y
       apt install -y expect mysql-server-5.7
-      NEW_MYSQL_PASSWORD="root"
-      DB_PASSWORD="root"
+      NEW_MYSQL_PASSWORD="{{ db_root_password }}"
+      DB_PASSWORD=" {{ db_password }}"
       SECURE_MYSQL=$(expect -c "
         set timeout 3
         spawn mysql_secure_installation
@@ -198,12 +196,14 @@
       /sbin/iptables -A OUTPUT -p TCP --source-port 3306 -m state --state ESTABLISHED -j ACCEPT
       service ufw restart
       mysql --user=root --password="${NEW_SQL_PASSWORD}" -e "CREATE DATABASE owncloud;"
-      mysql --user=root --password="${NEW_SQL_PASSWORD}" -e "GRANT ALL ON owncloud.*" TO 'owncloud'@'%' IDENTIFIED BY '${DB_PASSWORD}'"
+      mysql --user=root --password="${NEW_SQL_PASSWORD}" -e "GRANT ALL ON owncloud.* TO 'owncloud'@'%' IDENTIFIED BY '${DB_PASSWORD}'"
       mysql --user=root --password="${NEW_SQL_PASSWORD}" -e "FLUSH PRIVILEGES;"
       
       
   register: private_instance
 
+- set_fact:
+    mysql_host: "{{ private_instance.instances[0].private_ip }}"
 
 - add_host:
     name: "{{ public_instance.instances[0].public_dns_name }}"

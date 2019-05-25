@@ -6,7 +6,7 @@
     update_cache: yes
   become: yes
 
-- name: Install LAMP
+- name: Install LAMP and other dependencies
   apt:
     name: "{{ packages }}"
   vars:
@@ -16,6 +16,12 @@
       - libapache2-mod-php
       - php-mysql
       - curl
+      - python3-pip
+  become: yes
+
+- name: Install pyOpenSSL
+  pip:
+    name: pyOpenSSL
   become: yes
 
 - name: Edit Apache Config file
@@ -56,40 +62,25 @@
   shell: phpenmod pdo_mysql
   become: yes
 
+- name: Generate OpenSSL private key
+  openssl_privatekey:
+    path: /etc/ssl/private/apache-selfsigned.key
+  become: yes
+
+- name: Generate OpenSSL CSR
+  openssl_csr:
+    path: /etc/ssl/apache-selfsigned.csr
+    privatekey_path: /etc/ssl/private/apache-selfsigned.key
+    common_name: "{{ ansible_default_ipv4.address }}"
+  become: yes
+
 - name: Generate Certificate for OpenSSL
-  shell: |
-    #!/bin/bash
-    apt update -y
-    apt install -y apache2
-    IP="curl icanhazip.com"
-    INSTALL_CERT=$(expect -c "
-    set timeout 3
-    spawn openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/apache-selfsigned.key -out /etc/ssl/certs/apache-selfsigned.crt
-
-    expect \"Country Name (2 letter code) [AU]:\"
-    send \"IN\r\"
-
-    expect \"State or Province Name (full name) [Some-State]:\"
-    send \"Tamil Nadu\r\"
-
-    expect \"Locality Name (eg, city) []:\"
-    send \"Chennai\r\"
-
-    expect \"Organization Name (eg, company) [Internet Widgits Pty Ltd]:\"
-    send \"\r\"
-
-    expect \"Organizational Unit Name (eg, section) []:\"
-    send \"\r\"
-
-    expect \"Common Name (e.g. server FQDN or YOUR name) []:\"
-    send \"$IP\r\"
-
-    expect \"Email Address []:\"
-    send \"danieb1996@live.com\r\"
-
-    expect eof")
-
-    echo "${INSTALL_CERT}"
+  openssl_certificate:
+    path: /etc/ssl/certs/apache-selfsigned.crt
+    privatekey_path: /etc/ssl/private/apache-selfsigned.key
+    csr_path: /etc/ssl/apache-selfsigned.csr
+    provider: selfsigned
+  become: yes
 
 - name: Configure Apache
   copy:
@@ -125,15 +116,42 @@
 - name: Configure Apache Step 3
   lineinfile:
     path: /etc/apache2/sites-available/default-ssl.conf
-    line: 'ServerName {{ ansible_default_ipv4.address }}'
     insertafter: 'ServerAdmin danieb1996@live.com'
+    line: '   ServerName {{ ansible_default_ipv4.address }}'
     state: present
+  become: yes
 
+- name: Configure Apache Step 4
   lineinfile:
     path: /etc/apache2/sites-available/000-default.conf
-    insertafter: <VirtualHost *:80>
-    line: 'Redirect "/" "https://{{ ansible_default_ipv4.address }}/"'
+    insertafter: 'ServerAdmin webmaster@localhost'
+    line: 'Redirect permanent "/" "https://{{ ansible_default_ipv4.address }}/"'
+    state: present
+  become: yes
 
+- name: Configure Apache Step 5
+  replace:
+    path: /etc/apache2/sites-available/default-ssl.conf
+    regexp: 'SSLCertificateFile\t\/etc\/ssl\/certs\/ssl\-cert\-snakeoil\.pem'
+    replace: 'SSLCertificateFile      /etc/ssl/certs/apache-selfsigned.crt'
+  become: yes
+
+- name: Configure Apache Step 6
+  replace:
+    path: /etc/apache2/sites-available/default-ssl.conf
+    regexp: 'SSLCertificateKeyFile\s+(.*)$'
+    replace: 'SSLCertificateKeyFile      /etc/ssl/private/apache-selfsigned.key'
+  become: yes
+
+- name: Configure Apache Step 7
+  lineinfile:
+    path: /etc/apache2/sites-available/default-ssl.conf
+    insertbefore: '</VirtualHost>'
+    line: |
+      BrowserMatch "MSIE [2-6]" \
+                    nokeepalive ssl-unclean-shutdown \
+                    downgrade-1.0 force-response-1.0
+    state: present
   become: yes
 
 - name: Further settings
@@ -157,24 +175,36 @@
   shell: a2enconf ssl-params
   become: yes
 
-# - name: Setting up permanent redirection
-#
-# - name: Adjusting Document Root
-
 - name: ownCloud Config
   copy:
     content: |
       <?php
-        "dbtype"        => "mysql",
-        "dbname"        => "owncloud",
-        "dbuser"        => "owncloud",
-        "dbpassword"    => "{{ db_password }}",
-        "dbhost"        => "{{ mysql_host }}"
-      ?>
-
+      $CONFIG = array (
+        'trusted_domains' => 
+        array (
+          0 => '10.0.2.6',
+        ),
+        'datadirectory' => '/var/www/owncloud/data',
+        'dbtype' => 'mysql',
+        'dbname' => 'owncloud',
+        'dbhost' => "{{ mysql_host }}",
+        'version' => '10.1.0.4',
+        'mysql.utf8mb4' => true,
+        'dbuser' => 'owncloud',
+        'dbpassword' => "{{ db_password }}",
+        'logtimezone' => 'UTC',
+        'installed' => true,
+      );
     dest: /var/www/owncloud/config/config.php
     force: no
+  become: yes
 
+- name: Change config permissions
+  file:
+    path: /var/www/owncloud/config/config.php
+    owner: www-data
+    group: www-data
+    mode: 0640
   become: yes
 
 - name: Restart Apache2

@@ -1,9 +1,9 @@
-# - name: Create Instances
-#   hosts: localhost
-#   roles:
-#     - create-instances
+- name: Create Instances
+  hosts: localhost
+  roles:
+    - create-instances
 
 - name: Install ownCloud
-  hosts: all
+  hosts: ownCloud_instance
   roles:
     - install-ownCloud
