@@ -160,6 +160,8 @@
       Name: ownCloud Instance
   register: public_instance
 
+- debug: var=public_instance
+
 - name: Create Instance in Private Subnet
   ec2:
     key_name: "{{ key_name }}"
@@ -176,47 +178,26 @@
     user_data: |
       #!/bin/sh
       apt update -y
-      apt install -y expect mysql-server-5.7
-      NEW_MYSQL_PASSWORD="{{ db_root_password }}"
-      DB_PASSWORD=" {{ db_password }}"
-      SECURE_MYSQL=$(expect -c "
-        set timeout 3
-        spawn mysql_secure_installation
-        expect \"Press y|Y for Yes, any other for No:\"
-        send \"n\r\"
-        expect \"New password:\"
-        send \"$NEW_MYSQL_PASSWORD\r\"
-        expect \"Re-enter new password:\"
-        send \"$NEW_MYSQL_PASSWORD\r\"
-        expect \"Remove anonymous users?\"
-        send \"y\r\"
-        expect \"Disallow root login remotely?\"
-        send \"y\r\"
-        expect \"Remove test database and access to it?\"
-        send \"y\r\"
-        expect \"Reload privilege tables now?\"
-        send \"y\r\"
-        expect eof")
-      echo "${SECURE_MYSQL}"
-      sed -i "s/bind-address.*/bind-address = 0.0.0.0/g" /etc/mysql/mysql.conf.d/mysqld.cnf
-      systemctl restart mysql
-      ufw allow mysql
-      /sbin/iptables -A INPUT -p TCP --destination-port 3306 -m state --state NEW,ESTABLISHED -j ACCEPT
-      /sbin/iptables -A OUTPUT -p TCP --source-port 3306 -m state --state ESTABLISHED -j ACCEPT
-      service ufw restart
-      mysql --user=root --password="${NEW_SQL_PASSWORD}" -e "CREATE DATABASE owncloud;"
-      mysql --user=root --password="${NEW_SQL_PASSWORD}" -e "GRANT ALL ON owncloud.* TO 'owncloud'@'{{ public_instance.instances[0].private_ip }}' IDENTIFIED BY '${DB_PASSWORD}'"
-      mysql --user=root --password="${NEW_SQL_PASSWORD}" -e "FLUSH PRIVILEGES;"
-      
-      
+      apt install -y python2.7 python-pip
+
   register: private_instance
 
 - set_fact:
-    mysql_host: "{{ private_instance.instances[0].private_ip }}"
+    mysql_host: "{{ private_instance.instances[0].private_dns_name }}"
     cacheable: yes
 
-- debug: var=mysql_host
+- set_fact:
+    owncloud_public_ip: "{{ public_instance.instances[0].public_dns_name }}"
+    cacheable: yes
+
+- set_Fact:
+    owncloud_private_ip: "{{ public_instance.instances[0].private_dns_name }}"
+    cacheable: yes
 
 - add_host:
     name: "{{ public_instance.instances[0].public_dns_name }}"
     groups: ownCloud_instance
+
+- add_host:
+    name: "{{ private_instance.instances[0].private_dns_name }}"
+    groups: private_instance

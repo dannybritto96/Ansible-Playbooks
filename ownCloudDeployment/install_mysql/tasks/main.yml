@@ -1,0 +1,101 @@
+---
+# tasks file for install_mysql
+
+- set_fact:
+    owncloud_ip: "{{ hostvars['localhost']['owncloud_private_ip'] }}"
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+  become: yes
+
+- name: Install MySQL
+  apt:
+    name: "{{ packages }}"
+  vars:
+    packages:
+      - mysql-server-5.7
+      - python2.7
+      - python-pip
+      - default-libmysqlclient-dev
+  become: yes
+
+- name: Install Python MySQL module
+  pip:
+    name: MySQL-Python
+  become: yes
+
+- name: Set Root Password
+  mysql_user: user=root password="{{ db_root_password }}" host=localhost
+  become: yes
+
+- name: Remove anonymous users for Ansible FDQN
+  mysql_user: login_user="root" login_password="{{ db_root_password }}" user="" host="{{ ansible_fqdn }}" state="absent"
+
+- name: Remove anonymous users for localhost
+  mysql_user: login_user="root" login_password="{{ db_root_password }}" user="" state="absent"
+
+- name: Securing root user for localhost
+  mysql_user: login_user="root" login_password="{{ db_root_password }}" user="root" password="{{ db_root_password }}" host="127.0.0.1"
+
+- name: Securing root user for localhost domain
+  mysql_user: login_user="root" login_password="{{ db_root_password }}" user="root" password="{{ db_root_password }}" host="localhost"
+
+- name: Securing root user for server domain
+  mysql_user: login_user="root" login_password="{{ db_root_password }}" user="root" password="{{ db_root_password }}" host="{{ ansible_fqdn }}"
+
+- name: Removing Test Database
+  mysql_db: login_user=root login_password="{{ db_root_password }}" db=test state=absent
+
+- name: Create OwnCloud DB
+  mysql_db:
+    name: owncloud
+    state: present
+    login_user: root
+    login_password: "{{ db_root_password }}"
+
+- name: Create owncloud user
+  mysql_user:
+    name: owncloud
+    password: "{{ db_password }}"
+    priv: 'owncloud.*:ALL,GRANT'
+    login_user: root
+    login_password: "{{ db_root_password }}"
+    host: "{{ owncloud_ip }}"
+
+- name: Change mysql config
+  shell: sed -i "s/bind-address.*/bind-address = 0.0.0.0/g" /etc/mysql/mysql.conf.d/mysqld.cnf
+  become: yes
+
+- name: ufw config
+  shell: ufw allow mysql
+  become: yes
+
+- name: Restart MySQL
+  service:
+    name: mysql
+    state: restarted
+  become: yes
+
+- name: Restart ufw
+  service:
+    name: ufw
+    state: restarted
+  become: yes
+
+- name: Modify ip tables
+  iptables:
+    chain: INPUT
+    protocol: TCP
+    destination_port: 3306
+    ctstate: NEW,ESTABLISHED
+    jump: ACCEPT
+
+  iptables:
+    chain: OUTPUT
+    protocol: TCP
+    source_port: 3306
+    ctstate: ESTABLISHED
+    jump: ACCEPT
+  become: yes
+
