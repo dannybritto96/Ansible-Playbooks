@@ -12,6 +12,6 @@
     - install_mysql
 
 - name: Install ownCloud
-  hosts: ownCloud_instance
+  hosts: all
   roles:
     - install-ownCloud
