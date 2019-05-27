@@ -4,6 +4,26 @@
 - set_fact:
     owncloud_ip: "{{ hostvars['localhost']['owncloud_private_ip'] }}"
 
+- file:
+    path: /var/lib/dpkg/lock-frontend
+    state: absent
+  become: yes
+
+- file:
+    path: /var/lib/dpkg/lock
+    state: absent
+  become: yes
+
+- file: 
+    path: /var/lib/apt/lists/lock
+    state: absent
+  become: yes
+
+- file:
+    path: /var/cache/apt/archives/lock
+    state: absent
+  become: yes
+
 - name: Update apt cache
   apt:
     update_cache: yes
