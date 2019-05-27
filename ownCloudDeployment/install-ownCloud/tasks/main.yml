@@ -39,11 +39,11 @@
   become: yes
 
 - name: Add ownCloud APT keys
-  shell: curl https://download.owncloud.org/download/repositories/production/Ubuntu_18.10/Release.key | sudo apt-key add -
+  shell: curl https://download.owncloud.org/download/repositories/production/Ubuntu_18.04/Release.key | sudo apt-key add -
   become: yes
 
 - name: Add owncloud to sources.list
-  shell: echo 'deb http://download.owncloud.org/download/repositories/production/Ubuntu_18.10 /' | sudo tee /etc/apt/sources.list.d/owncloud.list
+  shell: echo 'deb http://download.owncloud.org/download/repositories/production/Ubuntu_18.04/ /' | sudo tee /etc/apt/sources.list.d/owncloud.list
   become: yes
 
 - name: Update cache
@@ -215,24 +215,24 @@
 #   shell: a2enconf ssl-params
 #   become: yes
 
-- name: ownCloud Config
-  copy:
-    content: |
-      <?php
-      $CONFIG = array (
-        'datadirectory' => '/var/www/owncloud/data',
-        'dbtype' => 'mysql',
-        'dbname' => 'owncloud',
-        'dbhost' => "{{ mysql_host }}",
-        'mysql.utf8mb4' => true,
-        'dbuser' => 'owncloud',
-        'dbpassword' => "{{ db_password }}",
-        'logtimezone' => 'UTC',
-        'installed' => true,
-      );
-    dest: /var/www/owncloud/config/config.php
-    force: no
-  become: yes
+# - name: ownCloud Config
+#   copy:
+#     content: |
+#       <?php
+#       $CONFIG = array (
+#         'datadirectory' => '/var/www/owncloud/data',
+#         'dbtype' => 'mysql',
+#         'dbname' => 'owncloud',
+#         'dbhost' => "{{ mysql_host }}",
+#         'mysql.utf8mb4' => true,
+#         'dbuser' => 'owncloud',
+#         'dbpassword' => "{{ db_password }}",
+#         'logtimezone' => 'UTC',
+#         'installed' => true,
+#       );
+#     dest: /var/www/owncloud/config/config.php
+#     force: no
+#   become: yes
 #
 # - name: Change config file permissions
 #   file:
