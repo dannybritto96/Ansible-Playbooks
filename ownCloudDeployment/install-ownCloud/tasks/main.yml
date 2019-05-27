@@ -73,11 +73,11 @@
     path: /etc/ssl/private/apache-selfsigned.key
   become: yes
 
-- name: Get Root CA
-  get_url:
-    url: https://www.symantec.com/content/en/us/enterprise/verisign/roots/VeriSign-Class%203-Public-Primary-Certification-Authority-G5.pem
-    dest: /etc/ssl/rootCA.pem
-  become: yes
+# - name: Get Root CA
+#   get_url:
+#     url: https://www.symantec.com/content/en/us/enterprise/verisign/roots/VeriSign-Class%203-Public-Primary-Certification-Authority-G5.pem
+#     dest: /etc/ssl/rootCA.pem
+#   become: yes
 
 - name: Generate OpenSSL CSR
   openssl_csr:
@@ -156,12 +156,12 @@
     replace: 'SSLCertificateKeyFile      /etc/ssl/private/apache-selfsigned.key'
   become: yes
 
-- name: Configure Apache Step 8
-  lineinfile:
-    path: /etc/apache2/sites-available/default-ssl.conf
-    insertafter: 'SSLCertificateKeyFile      /etc/ssl/private/apache-selfsigned.key'
-    line: 'SSLCACertificateFile  /etc/ssl/rootCA.pem'
-  become: yes
+# - name: Configure Apache Step 8
+#   lineinfile:
+#     path: /etc/apache2/sites-available/default-ssl.conf
+#     insertafter: 'SSLCertificateKeyFile      /etc/ssl/private/apache-selfsigned.key'
+#     line: 'SSLCACertificateFile  /etc/ssl/rootCA.pem'
+#   become: yes
 
 - name: Configure Apache Step 9
   lineinfile:
@@ -174,13 +174,13 @@
     state: present
   become: yes
 
-- name: Configure Apache Step 10
-  lineinfile:
-    path: /etc/apache2/sites-available/default-ssl.conf
-    insertafter: '<IfModule mod_ssl.c>'
-    line: 'SSLStaplingCache shmcb:/tmp/stapling_cache(128000)'
-    state: present
-  become: yes
+# - name: Configure Apache Step 10
+#   lineinfile:
+#     path: /etc/apache2/sites-available/default-ssl.conf
+#     insertafter: '<IfModule mod_ssl.c>'
+#     line: 'SSLStaplingCache shmcb:/tmp/stapling_cache(128000)'
+#     state: present
+#   become: yes
 
 - name: ufw settings
   shell: ufw allow 'Apache Full' && ufw delete allow 'Apache'

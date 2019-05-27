@@ -3,14 +3,11 @@
   roles:
     - create-instances
 
-- set_fact:
-    owncloud_public_ip: "{{ hostvars['localhost']['owncloud_public_ip'] }}"
-
 - name: Install MySQL
   hosts: private_instance
   vars:
     ansible_python_interpreter: /usr/bin/python
-    ansible_ssh_common_args: "-o ProxyCommand='ssh -i {{ playbook_dir }}/{{ key_name }}.pem -W %h:%p -q ubuntu@{{ owncloud_public_ip }}'"
+    ansible_ssh_common_args: "-o ProxyCommand='ssh -i {{ playbook_dir }}/{{ key_name }}.pem -W %h:%p -q ubuntu@{{ hostvars['localhost']['owncloud_public_ip'] }}'"
   roles:
     - install_mysql
 

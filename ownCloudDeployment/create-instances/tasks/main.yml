@@ -145,23 +145,6 @@
       - proto: all
         cidr_ip: 0.0.0.0/0
 
-- name: Create Instance in Public Subnet
-  ec2:
-    key_name: "{{ key_name }}"
-    instance_type: "{{ instance_type }}"
-    region: "{{ region }}"
-    image: "{{ image }}"
-    wait: yes
-    count: 1
-    group: "{{ public_sg }}"
-    wait_timeout: 500
-    vpc_subnet_id: "{{ public_subnet.subnet.id }}"
-    instance_tags:
-      Name: ownCloud Instance
-  register: public_instance
-
-- debug: var=public_instance
-
 - name: Create Instance in Private Subnet
   ec2:
     key_name: "{{ key_name }}"
@@ -179,8 +162,24 @@
       #!/bin/sh
       apt update -y
       apt install -y python2.7 python-pip
-
   register: private_instance
+
+- name: Create Instance in Public Subnet
+  ec2:
+    key_name: "{{ key_name }}"
+    instance_type: "{{ instance_type }}"
+    region: "{{ region }}"
+    image: "{{ image }}"
+    wait: yes
+    count: 1
+    group: "{{ public_sg }}"
+    wait_timeout: 500
+    vpc_subnet_id: "{{ public_subnet.subnet.id }}"
+    instance_tags:
+      Name: ownCloud Instance
+  register: public_instance
+
+- debug: var=public_instance
 
 - set_fact:
     mysql_host: "{{ private_instance.instances[0].private_dns_name }}"
@@ -190,7 +189,7 @@
     owncloud_public_ip: "{{ public_instance.instances[0].public_dns_name }}"
     cacheable: yes
 
-- set_Fact:
+- set_fact:
     owncloud_private_ip: "{{ public_instance.instances[0].private_dns_name }}"
     cacheable: yes
 
@@ -201,3 +200,7 @@
 - add_host:
     name: "{{ private_instance.instances[0].private_dns_name }}"
     groups: private_instance
+
+- wait_for:
+    host: "{{ public_instance.instances[0].public_dns_name }}"
+    port: 22
