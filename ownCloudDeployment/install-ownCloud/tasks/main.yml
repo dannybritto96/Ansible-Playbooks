@@ -1,12 +1,6 @@
 ---
 # tasks file for install-ownCloud
 
-- debug: var=inventory_hostname
-- debug: msg="{{ hostvars['localhost']['mysql_host']}}"
-
-- set_fact:
-    mysql_host: "{{ hostvars['localhost']['mysql_host']}}"
-
 - name: Add PPA
   shell: add-apt-repository ppa:ondrej/php
   become: yes
