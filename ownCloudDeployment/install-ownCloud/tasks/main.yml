@@ -23,11 +23,6 @@
       - php7.1
   become: yes
 
-- name: Install pyOpenSSL
-  pip:
-    name: pyOpenSSL
-  become: yes
-
 - name: Edit Apache Config file
   shell: sed -i 's/DirectoryIndex index\.html index\.cgi index\.pl index\.php index\.xhtml index\.htm/DirectoryIndex index\.php index\.html index\.cgi index\.pl index\.xhtml index\.htm/g' /etc/apache2/mods-enabled/dir.conf
   become: yes
